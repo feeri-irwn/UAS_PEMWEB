@@ -1,22 +1,21 @@
 from flask import jsonify, request
+from datetime import datetime
+import pytz  # Import pytz untuk zona waktu
 from models.ProdukModel import Produk
 from config import db
 from flask_jwt_extended import jwt_required
 
+# Zona waktu Jakarta (WIB)
+jakarta_tz = pytz.timezone('Asia/Jakarta')
+
+# Fungsi untuk mendapatkan waktu saat ini di zona waktu Jakarta (WIB)
+def get_current_time_in_wib():
+    return datetime.now(jakarta_tz)
+
 @jwt_required()
 def get_produk():
     produks = Produk.query.all()
-    produk_data = []
-    for produk in produks:
-        produk_data.append({
-            'id': produk.id,
-            'seller_id': produk.seller_id,
-            'name': produk.name,
-            'descrip': produk.descrip,
-            'price': produk.price,
-            'stock': produk.stock,
-            'created_at': produk.created_at
-        })
+    produk_data = [produk.to_dict() for produk in produks]  # Menggunakan metode to_dict() yang sudah ada di model
 
     response = {
         'status': 'success',
@@ -33,20 +32,10 @@ def get_produk_by_id(produk_id):
     if not produk:
         return jsonify({'error': 'Produk not found'}), 404
 
-    produk_data = {
-        'id': produk.id,
-        'seller_id': produk.seller_id,
-        'name': produk.name,
-        'descrip': produk.descrip,
-        'price': produk.price,
-        'stock': produk.stock,
-        'created_at': produk.created_at
-    }
-
     response = {
         'status': 'success',
         'data': {
-            'produk': produk_data
+            'produk': produk.to_dict()  # Menggunakan metode to_dict() untuk mengonversi objek produk ke dictionary
         },
         'message': 'Produk retrieved successfully!'
     }
@@ -55,25 +44,23 @@ def get_produk_by_id(produk_id):
 @jwt_required()
 def add_produk():
     new_produk_data = request.get_json()
+    created_at = new_produk_data.get('created_at', get_current_time_in_wib())  # Menggunakan waktu Indonesia (WIB)
     new_produk = Produk(
-        seller_id=new_produk_data['seller_id'],
-        name=new_produk_data['name'],
-        descrip=new_produk_data['descrip'],
-        price=new_produk_data['price'],
-        stock=new_produk_data['stock'],
-        created_at=new_produk_data.get('created_at')
+        nama=new_produk_data['nama'],
+        deskripsi=new_produk_data['deskripsi'],
+        harga=new_produk_data['harga'],
+        stok=new_produk_data['stok'],
+        kategori_id=new_produk_data['kategori_id'],  # Menggunakan kategori_id dari request
+        created_at=created_at  # Mendapatkan tanggal created_at dengan waktu Indonesia
     )
     db.session.add(new_produk)
     db.session.commit()
-    return jsonify({'message': 'Produk added successfully!', 'produk': {
-        'id': new_produk.id,
-        'seller_id': new_produk.seller_id,
-        'name': new_produk.name,
-        'descrip': new_produk.descrip,
-        'price': new_produk.price,
-        'stock': new_produk.stock,
-        'created_at': new_produk.created_at
-    }}), 201
+
+    response = {
+        'message': 'Produk added successfully!',
+        'produk': new_produk.to_dict()  # Menggunakan metode to_dict() untuk mengonversi objek produk ke dictionary
+    }
+    return jsonify(response), 201
 
 @jwt_required()
 def update_produk(produk_id):
@@ -82,23 +69,20 @@ def update_produk(produk_id):
         return jsonify({'error': 'Produk not found'}), 404
 
     update_data = request.get_json()
-    produk.seller_id = update_data.get('seller_id', produk.seller_id)
-    produk.name = update_data.get('name', produk.name)
-    produk.descrip = update_data.get('descrip', produk.descrip)
-    produk.price = update_data.get('price', produk.price)
-    produk.stock = update_data.get('stock', produk.stock)
+    produk.nama = update_data.get('nama', produk.nama)
+    produk.deskripsi = update_data.get('deskripsi', produk.deskripsi)
+    produk.harga = update_data.get('harga', produk.harga)
+    produk.stok = update_data.get('stok', produk.stok)
+    produk.kategori_id = update_data.get('kategori_id', produk.kategori_id)  # Update kategori_id
     produk.created_at = update_data.get('created_at', produk.created_at)
 
     db.session.commit()
-    return jsonify({'message': 'Produk updated successfully!', 'produk': {
-        'id': produk.id,
-        'seller_id': produk.seller_id,
-        'name': produk.name,
-        'descrip': produk.descrip,
-        'price': produk.price,
-        'stock': produk.stock,
-        'created_at': produk.created_at
-    }}), 200
+
+    response = {
+        'message': 'Produk updated successfully!',
+        'produk': produk.to_dict()  # Menggunakan metode to_dict() untuk mengonversi objek produk ke dictionary
+    }
+    return jsonify(response), 200
 
 @jwt_required()
 def delete_produk(produk_id):
