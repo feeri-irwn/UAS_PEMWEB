@@ -18,7 +18,7 @@ def login():
     if not check_password_hash(user.password, password):
         return jsonify({'message': 'Invalid password'}), 401
     
-    access_token = create_access_token(identity=user.username, expires_delta=timedelta(hours=1))
+    access_token = create_access_token(identity=user.username, expires_delta=timedelta(days=1))
     return jsonify({'access_token': access_token}), 200
 
 # Fungsi untuk meng-hash password
@@ -91,7 +91,7 @@ def add_user():
         fullname=new_user_data['fullname'],
         status=new_user_data['status'],
         role=new_user_data['role'],
-        created_at=new_user_data.get('created_at') or datetime.utcnow()  # Gunakan datetime saat ini jika tidak ada
+        created_at=new_user_data.get('created_at') or datetime.now()  # Gunakan datetime saat ini jika tidak ada
     )
     
     db.session.add(new_user)

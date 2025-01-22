@@ -15,7 +15,7 @@ class Pesanan(db.Model):
     kategori = db.relationship('Kategori', backref='pesanans')
 
     # Relasi dengan DetailPesanan
-    details = db.relationship('DetailPesanan', backref='pesanan', lazy=True)  # Menambahkan 'details'
+    details = db.relationship('DetailPesanan', backref='pesanan', lazy=True, cascade="all, delete-orphan")  # Menambahkan 'details'
 
     def to_dict(self):
         return {
